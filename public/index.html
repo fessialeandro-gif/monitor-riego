@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1a14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Monitor de Riego</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f6f3; --card:#ffffff; --text:#17201a; --muted:#6b776f; --line:#e3e8e3;
+    --ok:#2f9e5b; --warn:#d99a1e; --dry:#d9533b; --wet:#2f7fd1; --accent:#2f9e5b;
+    --radius:20px; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1a14; --card:#17241c; --text:#e8efe9; --muted:#8fa196; --line:#243429; --shadow:none; }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none!important}
+  html,body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  .wrap{max-width:960px;margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 16px}
+  h1{font-size:1.2rem;font-weight:700;letter-spacing:-.01em}
+  .estado{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .dot.on{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 20%,transparent)}
+  .dot.off{background:var(--dry)}
+  .aviso{background:color-mix(in srgb,var(--warn) 15%,var(--card));border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);
+    border-radius:12px;padding:10px 12px;font-size:.82rem;margin-bottom:14px}
+
+  .layout{display:grid;gap:14px}
+  @media (min-width:800px){ .layout{grid-template-columns:340px 1fr;align-items:start} .lateral{position:sticky;top:16px} }
+
+  /* Indicador principal */
+  .principal{padding:20px 18px 18px;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .principal .top{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .nombre{font-weight:600;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .icon-btn{border:0;background:var(--bg);color:var(--muted);width:36px;height:36px;border-radius:10px;cursor:pointer;display:grid;place-items:center;flex-shrink:0}
+  .gauge{position:relative;width:min(240px,70vw);aspect-ratio:1}
+  .gauge svg{width:100%;height:100%;transform:rotate(135deg)}
+  .gauge .track{stroke:var(--line)}
+  .gauge .arc{transition:stroke-dashoffset .8s ease, stroke .3s}
+  .gauge .centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gauge .pct{font-size:3.6rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+  .gauge .pct small{font-size:1.4rem;color:var(--muted);font-weight:500}
+  .gauge .lbl{font-size:.8rem;color:var(--muted);margin-top:4px}
+  .badge{display:inline-block;font-size:.85rem;font-weight:600;padding:6px 14px;border-radius:999px;margin-top:-6px}
+  .consejo{font-size:.85rem;color:var(--muted);margin-top:10px;max-width:260px}
+  .s-dry{--c:var(--dry)} .s-warn{--c:var(--warn)} .s-ok{--c:var(--ok)} .s-wet{--c:var(--wet)} .s-err{--c:var(--muted)}
+  .principal .badge{background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c)}
+  .principal .arc{stroke:var(--c)}
+
+  .ambiente{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
+  .amb{padding:14px 16px}
+  .amb .lbl,.stat .lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+  .amb .val{font-size:1.7rem;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+  .amb .val small{font-size:.9rem;color:var(--muted);font-weight:500}
+
+  .historial{padding:16px}
+  .historial .head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .historial h2{font-size:1rem}
+  .seg{display:inline-flex;background:var(--bg);border-radius:10px;padding:3px}
+  .seg button{border:0;background:none;color:var(--muted);font:inherit;font-size:.8rem;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer}
+  .seg button.act{background:var(--card);color:var(--text);box-shadow:var(--shadow)}
+  .chart-box{position:relative;height:260px}
+  @media (min-width:800px){ .chart-box{height:320px} }
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+  .stat{background:var(--bg);border-radius:12px;padding:10px 12px}
+  .stat .v{font-size:1.2rem;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+
+  footer{text-align:center;color:var(--muted);font-size:.75rem;margin:20px 0 8px}
+
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+  .overlay.open{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:480px;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));animation:up .22s ease}
+  @media (min-width:640px){.overlay{align-items:center}.sheet{border-radius:22px}}
+  @keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+  .grab{width:40px;height:4px;border-radius:9px;background:var(--line);margin:0 auto 14px}
+  .sheet h3{font-size:1.1rem;margin-bottom:14px}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .field label{font-size:.78rem;color:var(--muted);font-weight:600}
+  .field input{font:inherit;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:16px}
+  .err{color:var(--dry);font-size:.85rem;margin:-4px 0 10px}
+  .row{display:flex;gap:8px;margin-top:6px}
+  .btn{flex:1;border:0;border-radius:12px;padding:12px;font:inherit;font-weight:600;cursor:pointer}
+  .btn.pri{background:var(--accent);color:#fff}
+  .btn.sec{background:var(--bg);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🌱 Monitor de Riego</h1>
+    <div class="estado"><span class="dot" id="dot"></span><span id="estadoTxt">Conectando…</span></div>
+  </header>
+
+  <div class="aviso" id="demoAviso" hidden>Modo demo: no se pudo conectar con <code>/api/lecturas</code>, se muestran datos de prueba. Publicalo en Netlify para ver los datos reales.</div>
+
+  <div class="layout">
+    <div class="lateral">
+      <section class="card principal s-err" id="principal">
+        <div class="top">
+          <span class="nombre" id="nombre">Mi planta</span>
+          <button class="icon-btn" id="btnAjustes" aria-label="Ajustes">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+        <div class="gauge">
+          <svg viewBox="0 0 120 120">
+            <circle class="track" cx="60" cy="60" r="50" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="235.6 314.2"/>
+            <circle class="arc" id="arc" cx="60" cy="60" r="50" fill="none" stroke-width="10" stroke-linecap="round" stroke-dasharray="235.6 314.2" stroke-dashoffset="235.6"/>
+          </svg>
+          <div class="centro">
+            <div class="pct" id="pct">--<small>%</small></div>
+            <div class="lbl">humedad de suelo</div>
+          </div>
+        </div>
+        <span class="badge" id="badge">Sin datos</span>
+        <p class="consejo" id="consejo"></p>
+      </section>
+
+      <section class="ambiente" id="ambiente" hidden>
+        <div class="card amb"><div class="lbl">Temperatura</div><div class="val" id="temp">--<small>°C</small></div></div>
+        <div class="card amb"><div class="lbl">Humedad aire</div><div class="val" id="hum">--<small>%</small></div></div>
+      </section>
+    </div>
+
+    <section class="card historial">
+      <div class="head">
+        <h2>Historial</h2>
+        <div class="seg" id="rango">
+          <button data-h="6">6 h</button><button data-h="24" class="act">24 h</button><button data-h="168">7 días</button>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="chart"></canvas></div>
+      <div class="stats">
+        <div class="stat"><div class="lbl">Mínimo</div><div class="v" id="stMin">--</div></div>
+        <div class="stat"><div class="lbl">Promedio</div><div class="v" id="stProm">--</div></div>
+        <div class="stat"><div class="lbl">Máximo</div><div class="v" id="stMax">--</div></div>
+      </div>
+    </section>
+  </div>
+
+  <footer id="ultima">—</footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="grab"></div>
+    <h3>Ajustes del sensor</h3>
+    <div class="field"><label for="inNombre">Nombre</label><input id="inNombre" maxlength="30"></div>
+    <div class="field"><label for="inUmbral">Avisar como "seco" por debajo de (%)</label><input id="inUmbral" type="number" min="0" max="100" inputmode="numeric"></div>
+    <div class="field"><label for="inClave">Clave para guardar cambios</label><input id="inClave" type="password" autocomplete="current-password" placeholder="Se recuerda en este dispositivo"></div>
+    <div class="err" id="dError" hidden></div>
+    <div class="row"><button class="btn sec" id="btnCerrar">Cerrar</button><button class="btn pri" id="btnGuardar">Guardar</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+// ================== CONFIG ==================
+const API          = '/api';
+const OFFLINE_MIN  = 15;   // sin datos hace más de X minutos => "Sin conexión"
+const REFRESCO_SEG = 60;
+// ============================================
+
+let DEMO = false;
+let sensor = {canal:1, nombre:'Mi planta', umbral:30};
+let historial = [], ultima = null, rangoHoras = 24, chart;
+const $ = id => document.getElementById(id);
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
+const lsSet = (k,v) => { try { localStorage.setItem(k, v); } catch {} };
+
+function estado(v, umbral){
+  if (v === null || v === undefined) return {cls:'s-err', txt:'Sin señal', tip:'Revisá la conexión del sensor.'};
+  if (v < umbral)      return {cls:'s-dry', txt:'Seco',         tip:'Hay que regar.'};
+  if (v < umbral + 15) return {cls:'s-warn',txt:'Regar pronto', tip:'Todavía aguanta, pero se está secando.'};
+  if (v > 85)          return {cls:'s-wet', txt:'Muy húmedo',   tip:'No riegues por ahora.'};
+  return {cls:'s-ok', txt:'Bien', tip:'La humedad está en buen nivel.'};
+}
+
+function renderActual(){
+  const l = ultima || {};
+  const v = l.s1;
+  const e = ultima ? estado(v, sensor.umbral) : {cls:'s-err', txt:'Sin datos', tip:'Esperando la primera lectura del sensor.'};
+  $('principal').className = 'card principal ' + e.cls;
+  $('nombre').textContent = sensor.nombre;
+  $('pct').innerHTML = (v ?? '--') + '<small>%</small>';
+  $('badge').textContent = e.txt;
+  $('consejo').textContent = e.tip;
+  $('arc').style.strokeDashoffset = 235.6 * (1 - (v ?? 0) / 100);
+
+  const hayDht = l.temperatura != null || l.humedad_aire != null;
+  $('ambiente').hidden = !hayDht;
+  if (hayDht){
+    $('temp').innerHTML = (l.temperatura ?? '--') + '<small>°C</small>';
+    $('hum').innerHTML  = (l.humedad_aire != null ? Math.round(l.humedad_aire) : '--') + '<small>%</small>';
+  }
+
+  const dot = $('dot'), t = $('estadoTxt');
+  if (!ultima){ dot.className='dot off'; t.textContent='Sin datos'; $('ultima').textContent='—'; }
+  else {
+    const on = (Date.now() - new Date(ultima.created_at)) / 60000 < OFFLINE_MIN;
+    dot.className = 'dot ' + (on ? 'on' : 'off');
+    t.textContent = on ? 'En línea' : 'Sin conexión';
+    $('ultima').textContent = 'Última lectura: ' + hace(ultima.created_at);
+  }
+
+  const vals = historial.map(r=>r.s1).filter(x=>x!=null);
+  $('stMin').textContent  = vals.length ? Math.min(...vals)+'%' : '--';
+  $('stMax').textContent  = vals.length ? Math.max(...vals)+'%' : '--';
+  $('stProm').textContent = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length)+'%' : '--';
+}
+
+function renderChart(){
+  const css = getComputedStyle(document.documentElement);
+  const muted = css.getPropertyValue('--muted').trim(), line = css.getPropertyValue('--line').trim();
+  const ok = css.getPropertyValue('--ok').trim(), dry = css.getPropertyValue('--dry').trim();
+  const pts = historial.map(r=>({x:+new Date(r.created_at), y:r.s1}));
+  const x0 = pts.length ? pts[0].x : Date.now() - rangoHoras*3600e3, x1 = pts.length ? pts.at(-1).x : Date.now();
+  const data = {datasets:[
+    {label:'Humedad', data:pts, borderColor:ok, backgroundColor:ok+'22', fill:true, borderWidth:2.5, pointRadius:0, tension:.3, spanGaps:true},
+    {label:'Umbral', data:[{x:x0,y:sensor.umbral},{x:x1,y:sensor.umbral}], borderColor:dry, borderDash:[6,5], borderWidth:1.5, pointRadius:0, fill:false}
+  ]};
+  const options = {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    interaction:{mode:'nearest', axis:'x', intersect:false},
+    plugins:{legend:{display:false}, tooltip:{filter:it=>it.datasetIndex===0, callbacks:{
+      title: it => it[0] ? new Date(it[0].parsed.x).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '',
+      label: it => ` Humedad: ${it.parsed.y ?? '--'}%`}}},
+    scales:{
+      x:{type:'linear', min:x0, max:x1, grid:{display:false}, ticks:{color:muted, maxRotation:0, autoSkip:false, callback:v=>fmtEje(v)},
+        afterBuildTicks: ax => { const n = 4; ax.ticks = Array.from({length:n}, (_,i)=>({value: ax.min + (ax.max-ax.min)*(i+.5)/n})); }},
+      y:{min:0, max:100, ticks:{color:muted, stepSize:25, callback:v=>v+'%'}, grid:{color:line}}
+    }
+  };
+  if (chart){ chart.data = data; chart.options = options; chart.update(); }
+  else chart = new Chart($('chart'), {type:'line', data, options});
+}
+
+// ---------- Ajustes ----------
+function abrirAjustes(){
+  $('inNombre').value = sensor.nombre; $('inUmbral').value = sensor.umbral;
+  $('inClave').value = lsGet('riego_clave'); $('dError').hidden = true;
+  $('overlay').classList.add('open');
+}
+function cerrarAjustes(){ $('overlay').classList.remove('open'); }
+async function guardarAjustes(){
+  const nombre = $('inNombre').value.trim() || 'Mi planta';
+  const umbral = Math.max(0, Math.min(100, parseInt($('inUmbral').value) || 30));
+  const clave = $('inClave').value;
+  if (!DEMO){
+    const r = await fetch(`${API}/sensores`, {method:'PUT', headers:{'content-type':'application/json','x-token':clave},
+      body: JSON.stringify({canal:1, nombre, umbral})}).catch(()=>null);
+    if (!r || !r.ok){
+      $('dError').textContent = r && r.status === 401 ? 'Clave incorrecta.' : 'No se pudo guardar, probá de nuevo.';
+      $('dError').hidden = false; return;
+    }
+    lsSet('riego_clave', clave);
+  }
+  sensor = {canal:1, nombre, umbral};
+  cerrarAjustes(); renderActual(); renderChart();
+}
+
+// ---------- Datos ----------
+async function cargarSensor(){
+  if (DEMO) return;
+  try { const r = await fetch(`${API}/sensores`); if (r.ok){ const d = await r.json(); if (d[0]) sensor = d[0]; } } catch {}
+}
+async function cargarHistorial(){
+  if (!DEMO){
+    try {
+      const r = await fetch(`${API}/lecturas?horas=${rangoHoras}`);
+      if (!r.ok || !(r.headers.get('content-type')||'').includes('json')) throw new Error(r.status);
+      const d = await r.json();
+      historial = d.lecturas || []; ultima = d.ultima || historial.at(-1) || null;
+      return;
+    } catch {
+      if (historial.length) return;
+      DEMO = true; $('demoAviso').hidden = false;
+    }
+  }
+  historial = demoHistorial(rangoHoras); ultima = historial.at(-1);
+}
+async function refrescar(){
+  if (DEMO || document.hidden) return;
+  await cargarHistorial(); renderActual(); renderChart();
+}
+function demoHistorial(h){
+  const out = [], pasos = Math.min(h*12, 600), dt = h*3600e3/pasos;
+  for (let i=0;i<=pasos;i++){
+    const t = Date.now() - (pasos-i)*dt, f = i/pasos;
+    const riego = f > .55 ? 38 : 0;                       // simulación de un riego
+    out.push({created_at:new Date(t).toISOString(),
+      s1: Math.max(0,Math.min(100,Math.round(62 - 40*f + riego + 2*Math.sin(i/7)))),
+      temperatura: +(22 + 5*Math.sin(t/864e5*2*Math.PI)).toFixed(1),
+      humedad_aire: +(55 - 10*Math.sin(t/864e5*2*Math.PI)).toFixed(1)});
+  }
+  return out;
+}
+
+// ---------- Utils ----------
+function hace(f){
+  const s = (Date.now() - new Date(f))/1000;
+  if (s < 60) return 'hace instantes';
+  if (s < 3600) return `hace ${Math.round(s/60)} min`;
+  if (s < 86400) return `hace ${Math.round(s/3600)} h`;
+  return new Date(f).toLocaleString('es-AR');
+}
+function fmtEje(v){
+  const d = new Date(v);
+  return rangoHoras > 24 ? d.toLocaleDateString('es-AR',{weekday:'short',day:'2-digit'})
+                         : d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+}
+
+// ---------- Eventos ----------
+$('btnAjustes').onclick = abrirAjustes;
+$('btnCerrar').onclick = cerrarAjustes;
+$('btnGuardar').onclick = guardarAjustes;
+$('overlay').addEventListener('click', e=>{ if (e.target.id==='overlay') cerrarAjustes(); });
+$('rango').addEventListener('click', async e=>{
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#rango button').forEach(x=>x.classList.toggle('act', x===b));
+  rangoHoras = +b.dataset.h; await cargarHistorial(); renderActual(); renderChart();
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderChart);
+setInterval(renderActual, 30000);
+setInterval(refrescar, REFRESCO_SEG*1000);
+document.addEventListener('visibilitychange', ()=>{ if (!document.hidden) refrescar(); });
+
+(async ()=>{
+  await cargarSensor();
+  await cargarHistorial();
+  renderActual(); renderChart();
+})();
+</script>
+</body>
+</html>

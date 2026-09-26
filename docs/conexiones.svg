@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 760" width="1100" height="760" font-family="Inter,Arial,sans-serif">
+<rect width="1100" height="760" fill="#fff"/>
+<text x="30" y="38" font-size="24" text-anchor="start" fill="#111" font-weight="700">Monitor de riego (1 sensor) — conexiones</text>
+<text x="30" y="60" font-size="13" text-anchor="start" fill="#666" font-weight="500">Solo hay conexión donde hay un punto ●. El DHT22 (punteado) es opcional. ▲ 3V3 = va a la línea de 3V3.</text>
+<path d="M50 100 H900" fill="none" stroke="#d9362b" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+<text x="910" y="105" font-size="14" text-anchor="start" fill="#d9362b" font-weight="700">3V3</text>
+<path d="M30 560 H900" fill="none" stroke="#222" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+<text x="910" y="565" font-size="14" text-anchor="start" fill="#222" font-weight="700">GND</text>
+<rect x="100" y="150" width="200" height="360" rx="10" fill="#1f3b57" stroke="#333" stroke-width="2" />
+<text x="200" y="180" font-size="17" text-anchor="middle" fill="#fff" font-weight="700">NodeMCU</text>
+<text x="200" y="200" font-size="13" text-anchor="middle" fill="#cfe0f0" font-weight="500">ESP8266</text>
+<rect x="170" y="480" width="60" height="30" rx="4" fill="#bbb" stroke="#333"/>
+<text x="200" y="535" font-size="12" text-anchor="middle" fill="#444" font-weight="500">USB 5V (alimentación)</text>
+<rect x="96" y="236" width="8" height="8" fill="#555"/>
+<text x="110" y="245" font-size="15" text-anchor="start" fill="#fff" font-weight="700">3V3</text>
+<rect x="96" y="276" width="8" height="8" fill="#555"/>
+<text x="110" y="285" font-size="15" text-anchor="start" fill="#fff" font-weight="700">GND</text>
+<rect x="296" y="296" width="8" height="8" fill="#555"/>
+<text x="290" y="305" font-size="15" text-anchor="end" fill="#fff" font-weight="700">A0</text>
+<rect x="296" y="416" width="8" height="8" fill="#555"/>
+<text x="290" y="425" font-size="15" text-anchor="end" fill="#fff" font-weight="700">D1</text>
+<path d="M100 240 H50 V100" fill="none" stroke="#d9362b" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="50" cy="100" r="5" fill="#d9362b"/>
+<path d="M100 280 H30 V560" fill="none" stroke="#222" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="30" cy="560" r="5" fill="#222"/>
+<rect x="560" y="250" width="240" height="100" rx="10" fill="#e9f5ec" stroke="#2f7a4a" stroke-width="2" />
+<text x="680" y="292" font-size="16" text-anchor="middle" fill="#17391f" font-weight="700">Sensor de humedad</text>
+<text x="680" y="314" font-size="12" text-anchor="middle" fill="#4a6b53" font-weight="500">capacitivo v1.2</text>
+<rect x="556" y="296" width="8" height="8" fill="#555"/>
+<text x="570" y="304" font-size="11" text-anchor="start" fill="#2f7a4a" font-weight="700">AOUT</text>
+<rect x="796" y="271" width="8" height="8" fill="#555"/>
+<text x="792" y="279" font-size="11" text-anchor="end" fill="#2f7a4a" font-weight="700">VCC</text>
+<rect x="796" y="321" width="8" height="8" fill="#555"/>
+<text x="792" y="329" font-size="11" text-anchor="end" fill="#2f7a4a" font-weight="700">GND</text>
+<path d="M300 300 H560" fill="none" stroke="#e08a00" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M800 275 H860 V100" fill="none" stroke="#d9362b" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="860" cy="100" r="5" fill="#d9362b"/>
+<path d="M800 325 H840 V560" fill="none" stroke="#222" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" />
+<circle cx="840" cy="560" r="5" fill="#222"/>
+<rect x="420" y="380" width="140" height="80" rx="10" fill="#eef3fb" stroke="#2f6fd1" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="495" y="414" font-size="15" text-anchor="middle" fill="#1d3f7a" font-weight="700">DHT22</text>
+<text x="495" y="432" font-size="11" text-anchor="middle" fill="#4a5f86" font-weight="500">(opcional)</text>
+<rect x="416" y="416" width="8" height="8" fill="#555"/>
+<text x="428" y="424" font-size="9" text-anchor="start" fill="#2f6fd1" font-weight="700">DATA</text>
+<path d="M300 420 H420" fill="none" stroke="#1f9d55" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 5"/>
+<rect x="496" y="376" width="8" height="8" fill="#555"/>
+<text x="500" y="394" font-size="9" text-anchor="middle" fill="#2f6fd1" font-weight="700">VCC</text>
+<rect x="526" y="456" width="8" height="8" fill="#555"/>
+<text x="530" y="454" font-size="9" text-anchor="middle" fill="#2f6fd1" font-weight="700">GND</text>
+<path d="M530 460 V560" fill="none" stroke="#222" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 5"/>
+<circle cx="530" cy="560" r="5" fill="#222"/>
+<path d="M500 380 V350" fill="none" stroke="#d9362b" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 5"/>
+<path d="M490 350 H510 L500 338 Z" fill="#d9362b"/>
+<text x="516" y="346" font-size="11" text-anchor="start" fill="#d9362b" font-weight="700">3V3</text>
+<path d="M360 420 V400" fill="none" stroke="#1f9d55" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 5"/>
+<circle cx="360" cy="420" r="5" fill="#1f9d55"/>
+<path d="M360 400 l8 -4 l-16 -8 l16 -8 l-16 -8 l16 -8 l-8 -4 V350" fill="none" stroke="#555" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+<path d="M350 350 H370 L360 338 Z" fill="#d9362b"/>
+<text x="376" y="346" font-size="11" text-anchor="start" fill="#d9362b" font-weight="700">3V3</text>
+<text x="376" y="392" font-size="11" text-anchor="start" fill="#555" font-weight="700">10 kΩ</text>
+<line x1="30" y1="630" x2="1070" y2="630" stroke="#ddd"/>
+<text x="30" y="662" font-size="13" text-anchor="start" fill="#111" font-weight="700">Sensor</text>
+<text x="100" y="662" font-size="13" text-anchor="start" fill="#333" font-weight="500">VCC → 3V3 · GND → GND · AOUT → A0</text>
+<text x="30" y="690" font-size="13" text-anchor="start" fill="#111" font-weight="700">DHT22</text>
+<text x="100" y="690" font-size="13" text-anchor="start" fill="#333" font-weight="500">VCC → 3V3 · GND → GND · DATA → D1 (+10 kΩ a 3V3, el módulo de 3 pines ya la trae)</text>
+<text x="30" y="718" font-size="13" text-anchor="start" fill="#111" font-weight="700">Ojo</text>
+<text x="100" y="718" font-size="13" text-anchor="start" fill="#333" font-weight="500">Alimentá el sensor con 3V3, no con 5V: el A0 del NodeMCU acepta hasta 3,3 V. Si no ponés el DHT, en el código USAR_DHT = false.</text>
+</svg>
