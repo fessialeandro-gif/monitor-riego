@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eaf1ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c1f1c" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Riego">
+<title>Riego</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fondo:#eaf1ee; --card:#ffffff; --tinta:#10302c; --suave:#5d746f; --linea:#d6e2de; --hueco:#e1ebe7;
+    --agua:#1a86c7; --agua-2:#5fb4e6; --brote:#3e9b5f; --tierra:#c8891c; --alerta:#c23b3b;
+    --za:#3e9b5f; --zb:#7a5cc4;
+    --r-xl:28px; --r-l:20px; --r-m:14px;
+    --sombra:0 1px 0 rgba(16,48,44,.04), 0 10px 30px -12px rgba(16,48,44,.18);
+    --num:"Barlow Semi Condensed", "Barlow", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --fondo:#0c1f1c; --card:#132b27; --tinta:#e3eeea; --suave:#8fa8a2; --linea:#22403a; --hueco:#1a3631;
+      --agua:#3aa0dc; --agua-2:#7cc6f0; --sombra:none; }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none!important}
+  html{background:var(--fondo)}
+  body{background:var(--fondo);color:var(--tinta);font-family:Barlow,system-ui,sans-serif;font-size:16px;-webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--agua-2);outline-offset:2px}
+  .app{max-width:460px;margin:0 auto;min-height:100dvh;padding:calc(12px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom))}
+  .card{background:var(--card);border-radius:var(--r-l);box-shadow:var(--sombra)}
+
+  /* ---------- Encabezado ---------- */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;min-height:40px}
+  .top h1{font-family:var(--num);font-size:1.6rem;font-weight:700;letter-spacing:-.01em}
+  .estado{display:flex;align-items:center;gap:7px;font-size:.85rem;color:var(--suave);background:var(--card);padding:7px 12px;border-radius:999px;box-shadow:var(--sombra)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--suave)}
+  .dot.on{background:var(--brote);box-shadow:0 0 0 3px color-mix(in srgb,var(--brote) 25%,transparent)}
+  .dot.off{background:var(--alerta)}
+  .aviso{background:color-mix(in srgb,var(--tierra) 16%,var(--card));border-radius:var(--r-m);padding:10px 12px;font-size:.85rem;margin-bottom:14px;line-height:1.4}
+
+  /* ---------- Clima ---------- */
+  .clima{display:flex;gap:10px;margin-bottom:14px}
+  .clima div{flex:1;display:flex;align-items:center;gap:10px;padding:10px 14px}
+  .clima svg{flex-shrink:0;color:var(--suave)}
+  .clima b{font-family:var(--num);font-size:1.45rem;font-weight:600;font-variant-numeric:tabular-nums}
+  .clima span{font-size:.8rem;color:var(--suave);line-height:1.15}
+
+  /* ---------- Selector de zona ---------- */
+  .selector{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--hueco);padding:5px;border-radius:18px;margin-bottom:14px}
+  .selector button{border-radius:14px;padding:9px 12px;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}
+  .selector button.act{background:var(--card);box-shadow:var(--sombra)}
+  .selector .nom{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .selector .val{font-family:var(--num);font-weight:600;font-size:1.05rem;display:flex;align-items:center;gap:6px;flex-shrink:0}
+  .selector .val i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--suave))}
+  .selector .val i.riega{background:var(--agua);animation:latido 1.2s infinite}
+
+  /* ---------- Zona ---------- */
+  .zona{padding:18px 16px 16px;border-radius:var(--r-xl)}
+  .zona-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .zona-head h2{font-family:var(--num);font-size:1.35rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip{font-size:.85rem;font-weight:600;padding:5px 12px;border-radius:999px;white-space:nowrap;
+    background:color-mix(in srgb,var(--c) 16%,transparent);color:var(--c)}
+  .st-seco{--c:var(--tierra)} .st-bien{--c:var(--brote)} .st-humedo{--c:var(--agua)} .st-err{--c:var(--suave)}
+
+  .gauge{position:relative;width:min(270px,78vw);aspect-ratio:1;margin:4px auto -18px}
+  .gauge svg{width:100%;height:100%;display:block;overflow:visible}
+  .g-track{stroke:var(--hueco)}
+  .g-arc{transition:stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)}
+  .g-liquido{transition:transform 1s cubic-bezier(.2,.8,.2,1)}
+  .riega .ola{animation:ola 2.4s linear infinite}
+  .riega .ola.b{animation-duration:3.6s}
+  @keyframes ola{from{transform:translateX(0)}to{transform:translateX(-120px)}}
+  .g-centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+  .g-num{font-family:var(--num);font-weight:700;font-size:4.6rem;line-height:.9;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .g-num small{font-size:1.7rem;font-weight:600;margin-left:2px;color:var(--suave)}
+  .g-sub{font-size:.82rem;color:var(--suave);margin-top:8px;padding:2px 10px;border-radius:999px;background:color-mix(in srgb,var(--card) 80%,transparent)}
+  .g-num{text-shadow:0 0 14px color-mix(in srgb,var(--card) 70%,transparent)}
+  .g-marca text{font-family:var(--num);font-size:11px;font-weight:600}
+
+  .plantas{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .planta{background:var(--hueco);border-radius:var(--r-m);padding:10px 8px 8px;text-align:center;min-width:0}
+  .planta svg{width:100%;max-width:120px;display:block;margin:0 auto}
+  .planta .n{font-size:.85rem;color:var(--suave);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:-2px}
+
+  /* ---------- Riego ---------- */
+  .riego-info{margin-top:16px;font-size:.9rem;color:var(--suave);display:flex;align-items:center;gap:8px;min-height:22px}
+  .riego-info.activo{color:var(--agua);font-weight:600}
+  .progreso{height:6px;border-radius:9px;background:var(--hueco);overflow:hidden;margin-top:8px}
+  .progreso i{display:block;height:100%;background:linear-gradient(90deg,var(--agua),var(--agua-2));border-radius:9px;transition:width .8s}
+  .btn-riego{margin-top:14px;width:100%;min-height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;gap:10px;
+    font-size:1.15rem;font-weight:700;background:var(--agua);color:#fff;box-shadow:0 10px 24px -10px color-mix(in srgb,var(--agua) 70%,transparent);
+    transition:transform .12s}
+  .btn-riego:active{transform:scale(.98)}
+  .btn-riego.stop{background:var(--alerta);box-shadow:0 10px 24px -10px color-mix(in srgb,var(--alerta) 70%,transparent)}
+  .btn-riego:disabled{background:var(--hueco);color:var(--suave);box-shadow:none;font-size:.95rem;font-weight:600;cursor:not-allowed;transform:none}
+  .btn-riego.esperando{opacity:.8}
+  .spin{width:18px;height:18px;border:2.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:gira .8s linear infinite}
+  @keyframes gira{to{transform:rotate(360deg)}}
+  @keyframes latido{50%{opacity:.35}}
+  .ultima{text-align:center;color:var(--suave);font-size:.8rem;margin-top:16px}
+
+  /* ---------- Pantallas secundarias ---------- */
+  .titulo{font-family:var(--num);font-size:1.6rem;font-weight:700;margin-bottom:14px}
+  .seg{display:flex;background:var(--hueco);border-radius:12px;padding:4px;gap:4px}
+  .seg button{flex:1;padding:8px 6px;border-radius:9px;font-size:.9rem;font-weight:600;color:var(--suave)}
+  .seg button.act{background:var(--card);color:var(--tinta);box-shadow:var(--sombra)}
+  .hist-ctrl{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+  .hist{padding:14px 10px 12px}
+  .chart-box{position:relative;height:300px}
+  .leyenda{font-size:.82rem;color:var(--suave);margin:10px 6px 0;display:flex;gap:14px;flex-wrap:wrap}
+  .leyenda i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:6px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .stat{padding:12px 14px}
+  .stat .k{font-size:.85rem;color:var(--suave)}
+  .stat .v{font-family:var(--num);font-size:1.3rem;font-weight:600;margin-top:2px}
+
+  .lista{list-style:none;padding:4px 14px}
+  .lista li{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--linea);align-items:flex-start}
+  .lista li:first-child{border-top:0}
+  .ev-ico{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;background:color-mix(in srgb,var(--c) 15%,transparent);color:var(--c)}
+  .ev-t{flex:1;min-width:0;line-height:1.35}
+  .ev-t small{display:block;color:var(--suave);font-size:.82rem;margin-top:2px}
+  .vacio{color:var(--suave);padding:18px 0;text-align:center}
+
+  .ajuste{padding:16px;margin-bottom:14px}
+  .ajuste h3{font-family:var(--num);font-size:1.2rem;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .ajuste h3 i{width:10px;height:10px;border-radius:50%;background:var(--zc)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+  .field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;min-width:0}
+  .field label{font-size:.85rem;color:var(--suave);font-weight:500}
+  .field input{font:inherit;font-size:16px;padding:12px;border-radius:12px;border:1px solid var(--linea);background:var(--fondo);color:var(--tinta);width:100%}
+  .field .hint{font-size:.8rem;color:var(--suave);line-height:1.35}
+  .num-in{font-family:var(--num)!important;font-size:1.15rem!important;font-weight:600}
+  .err{color:var(--alerta);font-size:.9rem;margin:-2px 0 12px}
+  .btn{width:100%;border-radius:16px;padding:15px;font-weight:700;font-size:1rem;background:var(--brote);color:#fff}
+  .ayuda{font-size:.88rem;color:var(--suave);line-height:1.45;margin-bottom:14px}
+
+  /* ---------- Barra inferior ---------- */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;justify-content:center;
+    padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--fondo) 88%,transparent);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--linea)}
+  .tabbar nav{display:grid;grid-template-columns:repeat(4,1fr);width:100%;max-width:440px}
+  .tabbar button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;font-size:.75rem;font-weight:600;color:var(--suave);border-radius:12px}
+  .tabbar button svg{width:24px;height:24px}
+  .tabbar button.act{color:var(--agua)}
+
+  /* ---------- Hojas / avisos ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(6,20,18,.5);display:none;align-items:flex-end;justify-content:center;z-index:30}
+  .overlay.open{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:460px;border-radius:26px 26px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));animation:sube .22s ease}
+  .grab{width:40px;height:4px;border-radius:9px;background:var(--linea);margin:0 auto 14px}
+  .sheet h3{font-family:var(--num);font-size:1.3rem;margin-bottom:6px}
+  .fila{display:flex;gap:8px}
+  .btn.sec{background:var(--hueco);color:var(--tinta)}
+  .toast{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));max-width:428px;margin:0 auto;z-index:40;
+    background:var(--tinta);color:var(--fondo);padding:13px 16px;border-radius:16px;font-size:.92rem;line-height:1.35;animation:sube .2s ease}
+  .toast.err{background:var(--alerta);color:#fff}
+  @keyframes sube{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+  @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- =============== PANEL =============== -->
+  <main id="v-panel">
+    <div class="top">
+      <h1>Riego</h1>
+      <div class="estado"><span class="dot" id="dot"></span><span id="estadoTxt">Conectando…</span></div>
+    </div>
+    <div class="aviso" id="demoAviso" hidden>Modo demo: la página no encontró la API y muestra datos de prueba. Los botones funcionan igual para que veas cómo se comporta.</div>
+
+    <div class="clima" id="clima" hidden>
+      <div class="card">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+        <p><b id="temp">--°</b><br><span>temperatura</span></p>
+      </div>
+      <div class="card">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2.7 6.3 9.4a7 7 0 1 0 11.4 0z"/></svg>
+        <p><b id="hum">--%</b><br><span>humedad del aire</span></p>
+      </div>
+    </div>
+
+    <div class="selector" id="selector" role="tablist"></div>
+    <section class="card zona" id="zona"></section>
+    <p class="ultima" id="ultima"></p>
+  </main>
+
+  <!-- =============== HISTORIAL =============== -->
+  <main id="v-historial" hidden>
+    <h1 class="titulo">Historial</h1>
+    <div class="hist-ctrl">
+      <div class="seg" id="vista"><button data-v="zonas" class="act">Promedio por zona</button><button data-v="plantas">Cada planta</button></div>
+      <div class="seg" id="rango"><button data-h="6">6 horas</button><button data-h="24" class="act">24 horas</button><button data-h="168">7 días</button></div>
+    </div>
+    <section class="card hist">
+      <div class="chart-box"><canvas id="chart"></canvas></div>
+      <div class="leyenda" id="leyenda"></div>
+    </section>
+    <div class="stats" id="stats"></div>
+  </main>
+
+  <!-- =============== RIEGOS =============== -->
+  <main id="v-riegos" hidden>
+    <h1 class="titulo">Riegos</h1>
+    <section class="card"><ul class="lista" id="eventos"></ul></section>
+  </main>
+
+  <!-- =============== AJUSTES =============== -->
+  <main id="v-ajustes" hidden>
+    <h1 class="titulo">Ajustes</h1>
+    <p class="ayuda">El riego solo arranca si el promedio de la zona está por debajo de <b>seco</b>. Se corta solo al llegar al valor de <b>corte</b> o al tiempo máximo.</p>
+    <div id="formZonas"></div>
+    <section class="card ajuste">
+      <h3>Clave</h3>
+      <div class="field"><label for="aClave">Clave para regar y guardar cambios</label>
+        <input id="aClave" type="password" autocomplete="current-password" placeholder="Se recuerda en este celular"></div>
+      <div class="err" id="aError" hidden></div>
+      <button class="btn" id="aGuardar">Guardar ajustes</button>
+    </section>
+  </main>
+</div>
+
+<!-- Barra inferior -->
+<div class="tabbar">
+  <nav id="tabs">
+    <button data-tab="panel" class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7 6.3 9.4a7 7 0 1 0 11.4 0z"/></svg>Panel</button>
+    <button data-tab="historial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg>Historial</button>
+    <button data-tab="riegos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Riegos</button>
+    <button data-tab="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Ajustes</button>
+  </nav>
+</div>
+
+<!-- Pedir clave -->
+<div class="overlay" id="ovClave">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cTit">
+    <div class="grab"></div>
+    <h3 id="cTit">Ingresá la clave</h3>
+    <p class="ayuda">Es la clave que cargaste en Netlify (ADMIN_TOKEN o DEVICE_TOKEN). Queda guardada en este celular.</p>
+    <div class="field"><input id="cClave" type="password" autocomplete="current-password" aria-label="Clave"></div>
+    <div class="err" id="cError" hidden></div>
+    <div class="fila"><button class="btn sec" data-cerrar>Cancelar</button><button class="btn" id="cOk">Continuar</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+// ================== CONFIG ==================
+const API = '/api';
+const OFFLINE_MIN = 15;          // sin datos hace más de X minutos => "Sin conexión"
+const REFRESCO_SEG = 15;         // normal
+const REFRESCO_RIEGO_SEG = 5;    // mientras riega o espera al equipo
+// ============================================
+
+const $ = id => document.getElementById(id);
+const ZONAS = ['A','B'];
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
+const lsSet = (k,v) => { try { localStorage.setItem(k, v); } catch {} };
+
+let DEMO = false;
+let estado = {
+  config: { plantas:['Planta 1','Planta 2','Planta 3','Planta 4'], zonas:{
+    A:{nombre:'Zona A', sensores:[1,2], umbral:30, objetivo:45, maxMin:10},
+    B:{nombre:'Zona B', sensores:[3,4], umbral:30, objetivo:45, maxMin:10}}},
+  control: { A:{orden:'detener', id:0, ts:null}, B:{orden:'detener', id:0, ts:null} },
+  ultima: null, eventos: []
+};
+let historial = [], rangoHoras = 24, vista = 'zonas', chart, timer, enviando = {};
+let zonaSel = ZONAS.includes(lsGet('riego_zona')) ? lsGet('riego_zona') : 'A';
+let tab = 'panel', demoInicio = {A:null, B:null};
+
+// ---------- Lógica ----------
+function promedio(l, z){
+  if (!l) return null;
+  const v = estado.config.zonas[z].sensores.map(n => l['s'+n]);
+  if (v.some(x => x === null || x === undefined)) return null;
+  return Math.round(v.reduce((a,b)=>a+b,0) / v.length);
+}
+function online(){ return estado.ultima && (Date.now() - new Date(estado.ultima.created_at)) / 60000 < OFFLINE_MIN; }
+function regando(z){ return !!(estado.ultima && estado.ultima['r'+z]); }
+function esperando(z){
+  const c = estado.control[z];
+  if (!c || !c.ts) return false;
+  const pedido = new Date(c.ts) > new Date(estado.ultima?.created_at || 0);
+  return pedido && ((c.orden === 'regar' && !regando(z)) || (c.orden === 'detener' && regando(z)));
+}
+function clasif(p, zona){
+  if (p === null) return {cls:'st-err', txt:'Sin señal'};
+  if (p < zona.umbral) return {cls:'st-seco', txt:'Seco'};
+  if (p >= zona.objetivo) return {cls:'st-humedo', txt:'Húmedo'};
+  return {cls:'st-bien', txt:'Bien'};
+}
+function inicioRiego(z){
+  if (demoInicio[z]) return demoInicio[z];
+  const e = estado.eventos.find(x => x.zona === z);
+  return e && e.tipo === 'inicio' ? e : null;
+}
+
+// ---------- Gauge principal ----------
+// Arco de 270°: empieza abajo a la izquierda (135°) y termina abajo a la derecha (405°).
+const GR = 88, GC = 100, GLEN = 2*Math.PI*GR*0.75, GCIRC = 2*Math.PI*GR;
+function punto(p, r){ const a = (135 + 270*p/100) * Math.PI/180; return [GC + r*Math.cos(a), GC + r*Math.sin(a)]; }
+function colorEstado(cls){ return {'st-seco':'var(--tierra)','st-bien':'var(--brote)','st-humedo':'var(--agua)','st-err':'var(--suave)'}[cls]; }
+
+function gaugeSVG(p, zona, cls, riega){
+  const off = GLEN * (1 - (p ?? 0)/100);
+  const nivel = 74 - 148 * (p ?? 0)/100;     // y del agua dentro del círculo interior (r=74)
+  const marca = (v, txt, col) => {
+    const [x1,y1] = punto(v, GR-13), [x2,y2] = punto(v, GR+13), [tx,ty] = punto(v, GR+27);
+    return `<g class="g-marca"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
+      <text x="${tx}" y="${ty}" fill="${col}" text-anchor="middle" dominant-baseline="middle">${txt}</text></g>`;
+  };
+  const ola = (y, cls2, op) => `<path class="ola ${cls2}" fill="var(--agua)" opacity="${op}" d="M-60 ${y} q15 -7 30 0${' t30 0'.repeat(19)} V200 H-60 Z"/>`;
+  return `<svg viewBox="-20 -20 240 240" aria-hidden="true">
+    <defs><clipPath id="interior"><circle cx="${GC}" cy="${GC}" r="74"/></clipPath></defs>
+    <circle cx="${GC}" cy="${GC}" r="74" fill="var(--hueco)"/>
+    <g clip-path="url(#interior)"><g class="g-liquido" style="transform:translateY(${GC + nivel}px)">
+      ${ola(0, 'b', .35)}${ola(4, '', .6)}</g></g>
+    <circle class="g-track" cx="${GC}" cy="${GC}" r="${GR}" fill="none" stroke-width="12" stroke-linecap="round"
+      stroke-dasharray="${GLEN} ${GCIRC}" transform="rotate(135 ${GC} ${GC})"/>
+    <circle class="g-arc" cx="${GC}" cy="${GC}" r="${GR}" fill="none" stroke="${colorEstado(cls)}" stroke-width="12" stroke-linecap="round"
+      stroke-dasharray="${GLEN} ${GCIRC}" stroke-dashoffset="${off}" transform="rotate(135 ${GC} ${GC})"/>
+    ${marca(zona.umbral, 'seco', 'var(--tierra)')}
+    ${marca(zona.objetivo, 'corte', 'var(--agua)')}
+  </svg>`;
+}
+
+// Mini gauge (semicírculo) por planta
+function miniSVG(v, zona){
+  const r = 40, cx = 60, cy = 52, len = Math.PI*r;
+  const c = clasif(v ?? null, zona);
+  const off = len * (1 - (v ?? 0)/100);
+  return `<svg viewBox="0 0 120 70" aria-hidden="true">
+    <path d="M${cx-r} ${cy} A${r} ${r} 0 0 1 ${cx+r} ${cy}" fill="none" stroke="var(--card)" stroke-width="9" stroke-linecap="round"/>
+    <path d="M${cx-r} ${cy} A${r} ${r} 0 0 1 ${cx+r} ${cy}" fill="none" stroke="${colorEstado(c.cls)}" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${len}" stroke-dashoffset="${off}" style="transition:stroke-dashoffset .9s"/>
+    <text x="${cx}" y="${cy-2}" text-anchor="middle" font-family="Barlow Semi Condensed, Barlow, sans-serif" font-weight="700"
+      font-size="${v === null || v === undefined ? 13 : 24}" fill="${v === null || v === undefined ? 'var(--suave)' : 'var(--tinta)'}">${v === null || v === undefined ? 'sin señal' : v + '%'}</text>
+  </svg>`;
+}
+
+// ---------- Render panel ----------
+function renderSelector(){
+  $('selector').innerHTML = ZONAS.map(z => {
+    const zona = estado.config.zonas[z], p = promedio(estado.ultima, z), c = clasif(p, zona);
+    return `<button role="tab" aria-selected="${z===zonaSel}" class="${z===zonaSel?'act':''}" data-zona="${z}">
+      <span class="nom">${esc(zona.nombre)}</span>
+      <span class="val" style="--c:${colorEstado(c.cls)}"><i class="${regando(z)?'riega':''}"></i>${p ?? '--'}%</span></button>`;
+  }).join('');
+}
+
+function renderZona(){
+  const z = zonaSel, l = estado.ultima, zona = estado.config.zonas[z];
+  const p = promedio(l, z), c = clasif(p, zona), on = regando(z), esp = esperando(z);
+
+  const plantas = zona.sensores.map(n => `<div class="planta">${miniSVG(l ? l['s'+n] : null, zona)}
+    <div class="n">${esc(estado.config.plantas[n-1])}</div></div>`).join('');
+
+  let info = '', prog = '';
+  if (on){
+    const ini = inicioRiego(z);
+    const min = ini ? (Date.now() - new Date(ini.ts)) / 60000 : 0;
+    info = `<span>💧 Regando${ini ? ' hace ' + durTxt(min) : ''}. Corta en ${zona.objetivo}% o a los ${zona.maxMin} min.</span>`;
+    const desde = ini?.valor ?? zona.umbral;
+    const pct = p === null ? 0 : Math.max(4, Math.min(100, (p - desde) / Math.max(1, zona.objetivo - desde) * 100));
+    prog = `<div class="progreso" aria-label="Avance hasta el corte"><i style="width:${pct}%"></i></div>`;
+  } else {
+    info = `<span>${ultimoEventoTxt(z) || 'Riego apagado.'}</span>`;
+  }
+
+  let btn;
+  if (enviando[z] || esp){
+    btn = `<button class="btn-riego ${on?'stop':''} esperando" disabled><span class="spin"></span>Esperando al equipo…</button>`;
+  } else if (on){
+    btn = `<button class="btn-riego stop" data-accion="detener" data-z="${z}">${ICON.stop} Detener riego</button>`;
+  } else if (!l || !online()){
+    btn = `<button class="btn-riego" disabled>El equipo no está conectado</button>`;
+  } else if (p === null){
+    btn = `<button class="btn-riego" disabled>Un sensor no tiene señal</button>`;
+  } else if (p >= zona.umbral){
+    btn = `<button class="btn-riego" disabled>No hace falta regar: ${p}% (seco es menos de ${zona.umbral}%)</button>`;
+  } else {
+    btn = `<button class="btn-riego" data-accion="regar" data-z="${z}">${ICON.gota} Regar ${esc(zona.nombre)}</button>`;
+  }
+
+  $('zona').className = 'card zona ' + c.cls;
+  $('zona').innerHTML = `
+    <div class="zona-head"><h2>${esc(zona.nombre)}</h2><span class="chip">${c.txt}</span></div>
+    <div class="gauge ${on ? 'riega' : ''}">${gaugeSVG(p, zona, c.cls, on)}
+      <div class="g-centro"><div class="g-num">${p ?? '--'}<small>%</small></div><div class="g-sub">humedad promedio</div></div></div>
+    <div class="plantas">${plantas}</div>
+    <div class="riego-info ${on?'activo':''}">${info}</div>${prog}
+    ${btn}`;
+}
+
+function renderGeneral(){
+  const l = estado.ultima || {};
+  const hayDht = l.temperatura != null || l.humedad_aire != null;
+  $('clima').hidden = !hayDht;
+  if (hayDht){
+    $('temp').textContent = (l.temperatura != null ? l.temperatura.toFixed(1) : '--') + '°';
+    $('hum').textContent = (l.humedad_aire != null ? Math.round(l.humedad_aire) : '--') + '%';
+  }
+  const dot = $('dot'), t = $('estadoTxt');
+  if (!estado.ultima){ dot.className='dot off'; t.textContent='Sin datos'; $('ultima').textContent=''; }
+  else {
+    dot.className = 'dot ' + (online() ? 'on' : 'off');
+    t.textContent = online() ? 'En línea' : 'Sin conexión';
+    $('ultima').textContent = 'Última lectura ' + hace(estado.ultima.created_at);
+  }
+  renderSelector(); renderZona(); renderEventos();
+}
+
+// ---------- Riegos (eventos) ----------
+const EV = {
+  inicio:          {c:'var(--agua)',   ico:'gota',  txt:v=>`Empezó a regar con ${v ?? '--'}%`},
+  corte_objetivo:  {c:'var(--brote)',  ico:'ok',    txt:v=>`Cortó solo al llegar a ${v ?? '--'}%`},
+  corte_tiempo:    {c:'var(--tierra)', ico:'reloj', txt:v=>`Cortó por tiempo máximo (quedó en ${v ?? '--'}%)`},
+  corte_manual:    {c:'var(--suave)',  ico:'stop',  txt:v=>`Lo detuviste a mano en ${v ?? '--'}%`},
+  corte_sin_senal: {c:'var(--alerta)', ico:'alerta',txt:()=>`Cortó porque un sensor perdió la señal`},
+  rechazado:       {c:'var(--alerta)', ico:'alerta',txt:v=>`No regó: no estaba seca (${v ?? '--'}%)`},
+};
+function evTexto(e){ return (EV[e.tipo] || {txt:()=>e.tipo}).txt(e.valor); }
+function ultimoEventoTxt(z){
+  const e = estado.eventos.find(x => x.zona === z);
+  if (!e || e.tipo === 'inicio') return '';
+  return evTexto(e) + ', ' + hace(e.ts) + '.';
+}
+function renderEventos(){
+  const ev = estado.eventos.slice(0, 30);
+  $('eventos').innerHTML = ev.length ? ev.map(e => {
+    const d = EV[e.tipo] || {c:'var(--suave)', ico:'reloj'};
+    return `<li><span class="ev-ico" style="--c:${d.c}">${ICON[d.ico]}</span><div class="ev-t"><b>${esc(estado.config.zonas[e.zona]?.nombre || e.zona)}</b>: ${evTexto(e)}
+      <small>${fecha(e.ts)}</small></div></li>`;
+  }).join('') : '<li class="vacio">Todavía no hubo riegos. Cuando riegues desde el Panel, van a aparecer acá.</li>';
+}
+
+// ---------- Historial ----------
+const bandasRiego = {
+  id:'bandas',
+  beforeDatasetsDraw(c){
+    const {ctx, chartArea:a, scales:{x}} = c;
+    if (!historial.length) return;
+    ZONAS.forEach((z,zi) => {
+      ctx.save(); ctx.fillStyle = colVar(z === 'A' ? '--za' : '--zb') + '26';
+      let ini = null;
+      historial.forEach((r,i) => {
+        const t = +new Date(r.created_at);
+        if (r['r'+z] && ini === null) ini = t;
+        if ((!r['r'+z] || i === historial.length-1) && ini !== null){
+          const x1 = x.getPixelForValue(ini), x2 = x.getPixelForValue(t), h = (a.bottom - a.top) / 2;
+          ctx.fillRect(x1, a.top + zi*h, Math.max(2, x2-x1), h); ini = null;
+        }
+      });
+      ctx.restore();
+    });
+  }
+};
+function colVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+function renderChart(){
+  if (tab !== 'historial') return;
+  const muted = colVar('--suave'), line = colVar('--linea');
+  const pts = f => historial.map(r => ({x:+new Date(r.created_at), y:f(r)}));
+  const x0 = historial.length ? +new Date(historial[0].created_at) : Date.now() - rangoHoras*3600e3;
+  const x1 = historial.length ? +new Date(historial.at(-1).created_at) : Date.now();
+  let datasets;
+  if (vista === 'zonas'){
+    datasets = ZONAS.flatMap(z => {
+      const zona = estado.config.zonas[z], c = colVar(z === 'A' ? '--za' : '--zb');
+      return [
+        {label: zona.nombre, data: pts(r => promedio(r, z)), borderColor:c, backgroundColor:c, borderWidth:2.5, pointRadius:0, tension:.3, spanGaps:true},
+        {label: 'seco ' + zona.nombre, data:[{x:x0,y:zona.umbral},{x:x1,y:zona.umbral}], borderColor:c, borderDash:[5,5], borderWidth:1.2, pointRadius:0}
+      ];
+    });
+  } else {
+    const cols = [colVar('--za'), '#1a86c7', colVar('--zb'), '#c8891c'];
+    datasets = [1,2,3,4].map(n => ({label: estado.config.plantas[n-1], data: pts(r => r['s'+n] ?? null),
+      borderColor:cols[n-1], backgroundColor:cols[n-1], borderWidth:2, pointRadius:0, tension:.3, spanGaps:true}));
+  }
+  const options = {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    interaction:{mode:'index', intersect:false},
+    plugins:{legend:{display:false}, tooltip:{filter: it => !String(it.dataset.label).startsWith('seco '),
+      callbacks:{ title: it => it[0] ? fechaCorta(it[0].parsed.x) : '', label: it => ` ${it.dataset.label}: ${it.parsed.y ?? '--'}%` }}},
+    scales:{
+      x:{type:'linear', min:x0, max:x1, grid:{display:false}, ticks:{color:muted, maxRotation:0, autoSkip:false, callback:v=>fmtEje(v), font:{family:'Barlow'}},
+         afterBuildTicks: ax => { const n = 3; ax.ticks = Array.from({length:n}, (_,i)=>({value: ax.min + (ax.max-ax.min)*(i+.5)/n})); }},
+      y:{min:0, max:100, ticks:{color:muted, stepSize:25, callback:v=>v+'%', font:{family:'Barlow'}}, grid:{color:line}}
+    }
+  };
+  if (chart){ chart.data.datasets = datasets; chart.options = options; chart.update(); }
+  else chart = new Chart($('chart'), {type:'line', data:{datasets}, options, plugins:[bandasRiego]});
+
+  $('leyenda').innerHTML = vista === 'zonas'
+    ? ZONAS.map(z => `<span><i style="background:${colVar(z==='A'?'--za':'--zb')}"></i>${esc(estado.config.zonas[z].nombre)}</span>`).join('') +
+      `<span><i style="background:color-mix(in srgb,var(--suave) 30%,transparent)"></i>regando</span>`
+    : datasets.map(d => `<span><i style="background:${d.borderColor}"></i>${esc(d.label)}</span>`).join('');
+
+  // resumen del período por zona
+  $('stats').innerHTML = ZONAS.map(z => {
+    const vals = historial.map(r => promedio(r, z)).filter(v => v !== null);
+    const riegos = estado.eventos.filter(e => e.zona === z && e.tipo === 'inicio' && new Date(e.ts) >= new Date(x0)).length;
+    const nom = esc(estado.config.zonas[z].nombre);
+    return `<div class="card stat"><div class="k">${nom}: mínimo y máximo</div><div class="v">${vals.length ? Math.min(...vals) + '% a ' + Math.max(...vals) + '%' : '--'}</div></div>
+            <div class="card stat"><div class="k">${nom}: riegos</div><div class="v">${riegos}</div></div>`;
+  }).join('');
+}
+
+// ---------- Ajustes ----------
+function renderAjustes(){
+  $('formZonas').innerHTML = ZONAS.map(z => {
+    const zona = estado.config.zonas[z], [a,b] = zona.sensores;
+    return `<section class="card ajuste" style="--zc:var(${z==='A'?'--za':'--zb'})">
+      <h3><i></i>${esc(zona.nombre)}</h3>
+      <div class="field"><label for="n${z}">Nombre de la zona</label><input id="n${z}" maxlength="30" value="${esc(zona.nombre)}"></div>
+      <div class="grid2">
+        <div class="field"><label for="p${a}">Planta del sensor ${a}</label><input id="p${a}" maxlength="30" value="${esc(estado.config.plantas[a-1])}"></div>
+        <div class="field"><label for="p${b}">Planta del sensor ${b}</label><input id="p${b}" maxlength="30" value="${esc(estado.config.plantas[b-1])}"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label for="u${z}">Seco por debajo de (%)</label><input class="num-in" id="u${z}" type="number" min="0" max="95" inputmode="numeric" value="${zona.umbral}"></div>
+        <div class="field"><label for="o${z}">Cortar al llegar a (%)</label><input class="num-in" id="o${z}" type="number" min="1" max="100" inputmode="numeric" value="${zona.objetivo}"></div>
+      </div>
+      <div class="field"><label for="m${z}">Tiempo máximo de riego (minutos)</label><input class="num-in" id="m${z}" type="number" min="1" max="60" inputmode="numeric" value="${zona.maxMin}">
+        <span class="hint">Corta aunque los sensores no lleguen al valor, por ejemplo si se acabó el agua.</span></div>
+    </section>`;
+  }).join('');
+  $('aClave').value = lsGet('riego_clave');
+  $('aError').hidden = true;
+}
+
+async function guardarAjustes(){
+  const fail = m => { $('aError').textContent = m; $('aError').hidden = false; };
+  const plantas = [1,2,3,4].map(n => $('p'+n).value.trim() || estado.config.plantas[n-1]);
+  const zonas = {};
+  for (const z of ZONAS){
+    const nz = { nombre: $('n'+z).value.trim() || estado.config.zonas[z].nombre,
+      umbral: parseInt($('u'+z).value), objetivo: parseInt($('o'+z).value), maxMin: parseInt($('m'+z).value) };
+    if (![nz.umbral, nz.objetivo, nz.maxMin].every(Number.isFinite)) return fail(`${nz.nombre}: completá todos los valores.`);
+    if (nz.objetivo <= nz.umbral) return fail(`${nz.nombre}: el corte tiene que ser mayor que el valor de seco.`);
+    zonas[z] = nz;
+  }
+  const clave = $('aClave').value.trim();
+  if (!DEMO){
+    if (!clave) return fail('Ingresá la clave para guardar.');
+    const r = await fetch(`${API}/config`, {method:'PUT', headers:{'content-type':'application/json','x-token':clave},
+      body: JSON.stringify({plantas, zonas})}).catch(()=>null);
+    const d = r ? await r.json().catch(()=>({})) : {};
+    if (!r || !r.ok) return fail(d.error || 'No se pudo guardar. Revisá la conexión y probá de nuevo.');
+    lsSet('riego_clave', clave);
+    estado.config = d;
+  } else {
+    estado.config.plantas = plantas;
+    ZONAS.forEach(z => Object.assign(estado.config.zonas[z], zonas[z]));
+  }
+  $('aError').hidden = true;
+  renderGeneral(); renderAjustes();
+  toast('Ajustes guardados. El equipo los toma en unos segundos.');
+}
+
+// ---------- Acciones de riego ----------
+function pedirClave(msg){
+  return new Promise(res => {
+    $('cClave').value = lsGet('riego_clave');
+    $('cError').textContent = msg || ''; $('cError').hidden = !msg;
+    $('ovClave')._res = res;
+    $('ovClave').classList.add('open');
+    setTimeout(() => $('cClave').focus(), 50);
+    $('cOk').onclick = () => {
+      const v = $('cClave').value.trim(); if (!v) return;
+      lsSet('riego_clave', v); $('ovClave')._res = null; $('ovClave').classList.remove('open'); res(v);
+    };
+  });
+}
+function cerrarClave(){ const o = $('ovClave'); o.classList.remove('open'); if (o._res){ const r = o._res; o._res = null; r(null); } }
+
+async function accionRiego(z, accion){
+  let clave = lsGet('riego_clave');
+  if (!clave && !DEMO){ clave = await pedirClave(); if (!clave) return; }
+  enviando[z] = true; renderZona();
+  try {
+    if (DEMO){ await new Promise(r => setTimeout(r, 600)); demoControl(z, accion); return; }
+    const pedir = k => fetch(`${API}/control`, {method:'POST', headers:{'content-type':'application/json','x-token':k}, body: JSON.stringify({zona:z, accion})});
+    let r = await pedir(clave);
+    if (r.status === 401){
+      enviando[z] = false; renderZona();
+      clave = await pedirClave('La clave no es correcta.');
+      if (!clave) return;
+      enviando[z] = true; renderZona();
+      r = await pedir(clave);
+    }
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok){ toast(d.error || 'No se pudo enviar la orden.', true); return; }
+    estado.control = d.control || estado.control;
+    toast(accion === 'regar' ? 'Orden enviada. El equipo prende el riego en unos segundos.' : 'Orden enviada. El equipo corta el riego en unos segundos.');
+  } catch { toast('No hay conexión con el servidor.', true); }
+  finally { enviando[z] = false; renderGeneral(); programarRefresco(); }
+}
+
+// ---------- Datos ----------
+async function cargarEstado(){
+  if (DEMO) return;
+  try {
+    const r = await fetch(`${API}/estado`);
+    if (!r.ok || !(r.headers.get('content-type')||'').includes('json')) throw 0;
+    const d = await r.json();
+    const nueva = d.ultima && (!estado.ultima || d.ultima.created_at !== estado.ultima.created_at);
+    estado = {...estado, ...d};
+    if (nueva && historial.length && new Date(d.ultima.created_at) > new Date(historial.at(-1).created_at)) historial.push(d.ultima);
+    return nueva;
+  } catch { if (!estado.ultima) activarDemo(); }
+}
+async function cargarHistorial(){
+  if (DEMO){ historial = demoHistorial(rangoHoras); return; }
+  try {
+    const r = await fetch(`${API}/lecturas?horas=${rangoHoras}`);
+    if (!r.ok || !(r.headers.get('content-type')||'').includes('json')) throw 0;
+    historial = (await r.json()).lecturas || [];
+  } catch {}
+}
+function algunoActivo(){ return ZONAS.some(z => regando(z) || esperando(z) || enviando[z]); }
+function programarRefresco(){
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    if (!document.hidden && !DEMO){
+      const nueva = await cargarEstado();
+      renderGeneral(); if (nueva) renderChart();
+    }
+    programarRefresco();
+  }, (algunoActivo() ? REFRESCO_RIEGO_SEG : REFRESCO_SEG) * 1000);
+}
+
+// ---------- Pestañas ----------
+async function irA(t){
+  tab = t;
+  ['panel','historial','riegos','ajustes'].forEach(x => $('v-'+x).hidden = x !== t);
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('act', b.dataset.tab === t));
+  window.scrollTo(0, 0);
+  if (t === 'historial'){ if (!historial.length) await cargarHistorial(); renderChart(); }
+  if (t === 'ajustes') renderAjustes();
+}
+
+// ---------- Demo ----------
+function activarDemo(){
+  if (DEMO) return;
+  DEMO = true; $('demoAviso').hidden = false;
+  historial = demoHistorial(rangoHoras);
+  estado.ultima = {...historial.at(-1)};
+  estado.eventos = [
+    {ts:new Date(Date.now()-5*3600e3).toISOString(), zona:'B', tipo:'corte_objetivo', valor:46},
+    {ts:new Date(Date.now()-5.1*3600e3).toISOString(), zona:'B', tipo:'inicio', valor:27},
+  ];
+  setInterval(demoPaso, 2000);
+}
+function demoHistorial(h){
+  const out = [], pasos = Math.min(h*12, 500), dt = h*3600e3/pasos;
+  for (let i=0;i<=pasos;i++){
+    const t = Date.now() - (pasos-i)*dt, f = i/pasos, riegoB = f > .78 && f < .80, post = f >= .80 ? 22 : 0;
+    out.push({created_at:new Date(t).toISOString(), rA:0, rB: riegoB ? 1 : 0,
+      s1: Math.round(48 - 24*f + 2*Math.sin(i/6)), s2: Math.round(44 - 22*f + 2*Math.cos(i/7)),
+      s3: Math.round(40 - 18*f + post), s4: Math.round(36 - 16*f + post + 2*Math.sin(i/5)),
+      temperatura: +(22 + 5*Math.sin(t/864e5*2*Math.PI)).toFixed(1), humedad_aire: +(55 - 10*Math.sin(t/864e5*2*Math.PI)).toFixed(1)});
+  }
+  return out;
+}
+function demoControl(z, accion){
+  const zona = estado.config.zonas[z], p = promedio(estado.ultima, z);
+  if (accion === 'regar'){
+    if (p === null || p >= zona.umbral){ toast(`${zona.nombre} no está seca (${p}%). No se riega.`, true); return; }
+    estado.ultima['r'+z] = 1;
+    const e = {ts:new Date().toISOString(), zona:z, tipo:'inicio', valor:p};
+    demoInicio[z] = e; estado.eventos.unshift(e);
+  } else {
+    estado.ultima['r'+z] = 0; demoInicio[z] = null;
+    estado.eventos.unshift({ts:new Date().toISOString(), zona:z, tipo:'corte_manual', valor:p});
+  }
+}
+function demoPaso(){
+  const l = estado.ultima; let cambio = false;
+  ZONAS.forEach(z => {
+    if (!l['r'+z]) return;
+    const zona = estado.config.zonas[z];
+    zona.sensores.forEach(n => l['s'+n] = Math.min(100, l['s'+n] + 2 + Math.round(Math.random()*2)));
+    const p = promedio(l, z);
+    if (p >= zona.objetivo){ l['r'+z] = 0; demoInicio[z] = null; estado.eventos.unshift({ts:new Date().toISOString(), zona:z, tipo:'corte_objetivo', valor:p}); }
+    cambio = true;
+  });
+  if (cambio){ l.created_at = new Date().toISOString(); historial.push({...l}); renderGeneral(); renderChart(); }
+}
+
+// ---------- Utilidades ----------
+const ICON = {
+  gota:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5 6 9.6a7.3 7.3 0 1 0 12 0z"/></svg>',
+  stop:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>',
+  ok:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>',
+  reloj:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  alerta:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17.5v.5"/></svg>',
+};
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function hace(f){
+  const s = (Date.now() - new Date(f))/1000;
+  if (s < 60) return 'hace instantes';
+  if (s < 3600) return `hace ${Math.round(s/60)} min`;
+  if (s < 86400) return `hace ${Math.round(s/3600)} h`;
+  return 'el ' + fecha(f);
+}
+function durTxt(min){ return min < 1 ? 'instantes' : Math.round(min) + ' min'; }
+function fecha(f){
+  const d = new Date(f), hoy = new Date(), ayer = new Date(Date.now()-864e5);
+  const h = d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+  if (d.toDateString() === hoy.toDateString()) return 'Hoy, ' + h;
+  if (d.toDateString() === ayer.toDateString()) return 'Ayer, ' + h;
+  return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}) + ', ' + h;
+}
+function fechaCorta(v){ return new Date(v).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); }
+function fmtEje(v){
+  const d = new Date(v);
+  return rangoHoras > 24 ? d.toLocaleDateString('es-AR',{weekday:'short',day:'2-digit'})
+                         : d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+}
+function toast(msg, err){
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.setAttribute('role','status'); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4500);
+}
+
+// ---------- Eventos de la página ----------
+$('tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) irA(b.dataset.tab); });
+$('selector').addEventListener('click', e => {
+  const b = e.target.closest('[data-zona]'); if (!b) return;
+  zonaSel = b.dataset.zona; lsSet('riego_zona', zonaSel); renderSelector(); renderZona();
+});
+$('zona').addEventListener('click', e => { const a = e.target.closest('[data-accion]'); if (a) accionRiego(a.dataset.z, a.dataset.accion); });
+$('ovClave').addEventListener('click', e => { if (e.target.id === 'ovClave' || e.target.closest('[data-cerrar]')) cerrarClave(); });
+$('cClave').addEventListener('keydown', e => { if (e.key === 'Enter') $('cOk').click(); });
+$('aGuardar').onclick = guardarAjustes;
+$('rango').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#rango button').forEach(x => x.classList.toggle('act', x===b));
+  rangoHoras = +b.dataset.h; await cargarHistorial(); renderChart();
+});
+$('vista').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#vista button').forEach(x => x.classList.toggle('act', x===b));
+  vista = b.dataset.v; renderChart();
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { renderZona(); renderChart(); });
+document.addEventListener('visibilitychange', async () => { if (!document.hidden && !DEMO){ await cargarEstado(); renderGeneral(); } });
+setInterval(() => { if (!DEMO) renderGeneral(); }, 30000);   // "hace X min"
+setInterval(async () => { if (!DEMO && !document.hidden && tab === 'historial'){ await cargarHistorial(); renderChart(); } }, 5*60000);
+
+(async () => {
+  await cargarEstado();
+  renderGeneral(); programarRefresco();
+})();
+</script>
+</body>
+</html>
