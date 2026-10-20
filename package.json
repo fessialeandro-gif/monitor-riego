@@ -1,5 +1,5 @@
 {
-  "name": "monitor-riego-1",
+  "name": "monitor-riego",
   "private": true,
   "type": "module",
   "dependencies": {
